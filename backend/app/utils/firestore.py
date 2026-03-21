@@ -5,15 +5,23 @@ Responsible for: Maintaining the Firebase Admin initialization and establishing 
 
 from datetime import datetime
 
+import os
 from google.cloud import firestore
 from google.oauth2 import service_account
+from dotenv import load_dotenv
 
-# Load credentials
-cred = service_account.Credentials.from_service_account_file(
-    "firebase-key.json"
-)
+load_dotenv()
 
-db = firestore.Client(credentials=cred)
+# Load credentials securely (Render / Local Dev compatibility)
+key_path = os.getenv("FIREBASE_KEY_PATH", "firebase-key.json")
+
+if os.path.exists(key_path):
+    print(f"🔒 Authenticating Firestore via Secret File: {key_path}")
+    cred = service_account.Credentials.from_service_account_file(key_path)
+    db = firestore.Client(credentials=cred)
+else:
+    print("⚠️ No local key file found. Attempting Default Cloud Credentials.")
+    db = firestore.Client()
 
 
 # -----------------------------
