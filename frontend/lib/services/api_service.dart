@@ -21,12 +21,7 @@ class ApiService {
   //   5. 172.21.96.1      — secondary hotspot/VPN subnet
   //   6. 10.0.2.2         — Android emulator loopback to host PC
   static const List<String> _candidateBaseUrls = [
-    "http://127.0.0.1:8000",
-    "http://192.168.8.106:8000",
-    "http://172.20.10.4:8000",
-    "http://172.20.10.2:8000",
-    "http://172.21.96.1:8000",
-    "http://10.0.2.2:8000",
+    "https://agrivora-production.up.railway.app",
   ];
 
   static String? _resolvedBaseUrl;
@@ -40,7 +35,7 @@ class ApiService {
   /// Retries up to [maxAttempts] times with [retryDelay] between attempts so
   /// the app waits for the backend to start rather than giving up immediately.
   static Future<String> getBaseUrl({int maxAttempts = 3}) async {
-    if (kIsWeb) return "http://localhost:8000";
+    if (kIsWeb) return "https://agrivora-production.up.railway.app";
     if (_resolvedBaseUrl != null) return _resolvedBaseUrl!;
 
     if (_isResolving) {
