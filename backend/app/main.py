@@ -5,7 +5,7 @@ Responsible for: Initializing the FastAPI application.
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.api_v1.endpoints import auth, chat, history, location, recommend, sensor
+from app.api.api_v1.endpoints import chat, location, recommend, sensor
 from app.api.crop_lgbm_api import router as crop_lgbm_router
 
 app = FastAPI(
@@ -23,9 +23,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Register endpoints
-app.include_router(auth.router, tags=["Auth"], prefix="/api/auth")
-app.include_router(history.router, tags=["History"])
+# Register only the stable endpoints (Firebase & CNN disabled)
 app.include_router(location.router, tags=["Location"])
 app.include_router(recommend.router, tags=["Recommend"])
 app.include_router(sensor.router, tags=["Sensor"])
