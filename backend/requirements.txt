@@ -18,4 +18,4 @@ bleak>=0.21.0
 tensorflow>=2.15.0
 Pillow>=10.0.0
 lightgbm>=4.0.0
-g4f>=0.3.0
+g4f>=0.3.0
