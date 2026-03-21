@@ -50,6 +50,25 @@ def _detect_img_size(keras_model) -> int:
         pass
     return 224
 
+def download_file(url, dest):
+    session = requests.Session()
+
+    response = session.get(url, stream=True)
+    token = None
+
+    for key, value in response.cookies.items():
+        if key.startswith('download_warning'):
+            token = value
+
+    if token:
+        params = {'confirm': token}
+        response = session.get(url, params=params, stream=True)
+
+    with open(dest, "wb") as f:
+        for chunk in response.iter_content(1024 * 1024):
+            if chunk:
+                f.write(chunk)
+
 def ensure_model():
     global MODEL_URL
     # Ensure directory exists
@@ -67,14 +86,7 @@ def ensure_model():
         raise RuntimeError("MODEL_URL is missing. Please add it to your environment variables.")
 
     print(f"[CNN] Downloading model from {MODEL_URL}...")
-    response = requests.get(MODEL_URL, stream=True, timeout=300)
-    response.raise_for_status()
-
-    with open(MODEL_PATH, "wb") as f:
-        for chunk in response.iter_content(chunk_size=1024 * 1024):
-            if chunk:
-                f.write(chunk)
-
+    download_file(MODEL_URL, MODEL_PATH)
     print("[CNN] Model downloaded successfully.")
 
 def load_model_once():
