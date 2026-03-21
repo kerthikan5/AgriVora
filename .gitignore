@@ -1,23 +1,49 @@
-# OS files
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
-
-# Environment
-.env
-*.env
-
 # Python
-__pycache__/
-*.pyc
 venv/
 .venv/
+backend/venv/
+backend/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
 
-# Node
-node_modules/
+# Secrets
+.env
+.env.*
+!.env.example
+firebase-key.json
+*service-account*.json
+*.pem
+*.key
+
+# Flutter
+frontend/.dart_tool/
+frontend/build/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/.packages
+frontend/.pub-cache/
+
+# Android / Gradle
+frontend/android/.gradle/
+frontend/android/local.properties
+.gradle/
+
+# iOS
+frontend/ios/Pods/
 
 # IDE
 .vscode/
 .idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Large ML files
+*.h5
+*.keras
+*.pt
+*.pth
+*.onnx

@@ -37,7 +37,7 @@ app.include_router(sensor.router, tags=["Sensor"])
 app.include_router(chat.router, tags=["Chat"])
 
 # Step 4: Register specific Machine Learning Model routers
-app.include_router(soil_cnn_router)
+# app.include_router(soil_cnn_router)  # Disabled temporarily for Railway initial deployment without 130MB model
 app.include_router(crop_lgbm_router)
 
 # Step 5: Register authentication and user management routers with specific base path prefixes
