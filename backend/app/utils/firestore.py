@@ -10,17 +10,29 @@ from google.cloud import firestore
 from google.oauth2 import service_account
 from dotenv import load_dotenv
 
+import json
+
 load_dotenv()
 
 # Load credentials securely (Render / Local Dev compatibility)
 key_path = os.getenv("FIREBASE_KEY_PATH", "firebase-key.json")
+firebase_cred_json = os.getenv("FIREBASE_CREDENTIALS_JSON")
 
-if os.path.exists(key_path):
+if firebase_cred_json:
+    print("🔒 Authenticating Firestore via Environment Variable (JSON string)")
+    try:
+        cred_info = json.loads(firebase_cred_json)
+        cred = service_account.Credentials.from_service_account_info(cred_info)
+        db = firestore.Client(credentials=cred)
+    except Exception as e:
+        print(f"❌ Failed to parse FIREBASE_CREDENTIALS_JSON: {e}")
+        db = firestore.Client()
+elif os.path.exists(key_path):
     print(f"🔒 Authenticating Firestore via Secret File: {key_path}")
     cred = service_account.Credentials.from_service_account_file(key_path)
     db = firestore.Client(credentials=cred)
 else:
-    print("⚠️ No local key file found. Attempting Default Cloud Credentials.")
+    print("⚠️ No local key file or env variable found. Attempting Default Cloud Credentials.")
     db = firestore.Client()
 
 

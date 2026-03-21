@@ -8,7 +8,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, HTTPException
 
-# from app.utils.firestore import get_scan_history
+from app.utils.firestore import get_scan_history
 
 router = APIRouter()
 
@@ -57,7 +57,7 @@ def get_latest_history(user_id: str):
 @router.post("/history/save")
 def add_history(data: dict):
     try:
-        # from app.utils.firestore import save_scan_history
+        from app.utils.firestore import save_scan_history
         success = save_scan_history(data)
         if success:
             return {"success": True, "data": "Saved successfully", "error": None}

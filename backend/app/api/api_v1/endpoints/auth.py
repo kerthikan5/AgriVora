@@ -15,7 +15,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr, Field
 
 from app.utils.email import send_otp_email
-# from app.utils.firestore import db
+from app.utils.firestore import db
 
 router = APIRouter()
 
