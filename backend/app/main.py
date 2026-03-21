@@ -32,7 +32,7 @@ app.add_middleware(
 app.include_router(location.router, tags=["Location"])
 app.include_router(image.router, tags=["Image"])
 app.include_router(recommend.router, tags=["Recommend"])
-app.include_router(history.router, tags=["History"])
+# app.include_router(history.router, tags=["History"])
 app.include_router(sensor.router, tags=["Sensor"])
 app.include_router(chat.router, tags=["Chat"])
 
@@ -41,8 +41,8 @@ app.include_router(chat.router, tags=["Chat"])
 app.include_router(crop_lgbm_router)
 
 # Step 5: Register authentication and user management routers with specific base path prefixes
-app.include_router(user.router, prefix="/api/users", tags=["Users"])
-app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
+# app.include_router(user.router, prefix="/api/users", tags=["Users"])
+# app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 
 @app.get("/health")
 def health_check():

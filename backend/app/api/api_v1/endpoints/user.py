@@ -11,7 +11,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, EmailStr
 
 from app.api.api_v1.endpoints.auth import hash_password, verify_password
-from app.utils.firestore import db
+# from app.utils.firestore import db
 
 router = APIRouter()
 

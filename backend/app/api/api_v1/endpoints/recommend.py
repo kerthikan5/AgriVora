@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, model_validator
 
 from app.services.recommend_service import recommend_crops
-from app.utils.firestore import save_scan_history
+# from app.utils.firestore import save_scan_history
 
 router = APIRouter()
 
@@ -86,15 +86,15 @@ def recommend(data: RecommendRequest):
         )
 
     # Save to Firestore (only if user is logged in)
-    if data.userId:
-        save_scan_history({
-            "userId": data.userId,
-            "soilSummary": soil_summary,
-            "weatherSummary": weather_summary,
-            "ph": data.ph,
-            "results": results,
-            "createdAt": datetime.utcnow()
-        })
+    # if data.userId:
+    #     save_scan_history({
+    #         "userId": data.userId,
+    #         "soilSummary": soil_summary,
+    #         "weatherSummary": weather_summary,
+    #         "ph": data.ph,
+    #         "results": results,
+    #         "createdAt": datetime.utcnow()
+    #     })
 
     return {
         "success": True,
