@@ -7,10 +7,11 @@ Role: Mounts CORS middleware and includes all routers (auth, user, images, locat
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.api_v1.endpoints import (auth, chat, history, image, location,
-                                      recommend, sensor, user)
+# from app.api.api_v1.endpoints import (auth, chat, history, image, location,
+#                                       recommend, sensor, user)
+from app.api.api_v1.endpoints import chat, location, recommend, sensor
 from app.api.crop_lgbm_api import router as crop_lgbm_router
-from app.api.soil_cnn import router as soil_cnn_router
+# from app.api.soil_cnn import router as soil_cnn_router
 
 # Step 1: Initialize the core FastAPI application with metadata
 app = FastAPI(
@@ -30,7 +31,7 @@ app.add_middleware(
 
 # Step 3: Register standard feature routers (Location, Image Processing, Recommend, History, Sensor IoT, Chat AI)
 app.include_router(location.router, tags=["Location"])
-app.include_router(image.router, tags=["Image"])
+# app.include_router(image.router, tags=["Image"])
 app.include_router(recommend.router, tags=["Recommend"])
 # app.include_router(history.router, tags=["History"])
 app.include_router(sensor.router, tags=["Sensor"])
