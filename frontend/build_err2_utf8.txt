@@ -1,0 +1,53 @@
+﻿Running Gradle task 'assembleRelease'...                        
+flutter : 
+At line:1 char:1
++ flutter build apk > 
+build_err2.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo          : 
+    NotSpecified: (:String)   
+  [], RemoteException
+    + FullyQualifiedErrorId : 
+    NativeCommandError
+ 
+FAILURE: Build failed with an 
+exception.
+
+* Where:
+Build file 'C:\Users\jkert\Des
+ktop\MobileApp\frontend\androi
+d\app\build.gradle.kts' line: 
+1
+
+* What went wrong:
+An exception occurred 
+applying plugin request [id: 
+'com.android.application']
+> Failed to apply plugin 'com.
+android.internal.version-check
+'.
+   > Minimum supported Gradle 
+version is 8.13. Current 
+version is 8.10.2.
+     Try updating the 
+'distributionUrl' property in 
+C:\Users\jkert\Desktop\MobileA
+pp\frontend\android\gradle\wra
+pper\gradle-wrapper.properties
+ to 'gradle-8.13-bin.zip'.
+
+* Try:
+> Run with --stacktrace 
+option to get the stack trace.
+> Run with --info or --debug 
+option to get more log output.
+> Run with --scan to get full 
+insights.
+> Get more help at 
+https://help.gradle.org.
+
+BUILD FAILED in 3s
+Running Gradle task 'assembleRelease'...                            3.5s
+Gradle task assembleRelease 
+failed with exit code 1

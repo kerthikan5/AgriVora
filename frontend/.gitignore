@@ -1,0 +1,52 @@
+# ──────────────────────────────────────────
+# Flutter / Dart
+# ──────────────────────────────────────────
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+**/doc/api/
+
+# ──────────────────────────────────────────
+# Android
+# ──────────────────────────────────────────
+android/.gradle/
+android/local.properties
+android/app/debug/
+android/app/profile/
+android/app/release/
+**/ios/Flutter/.last_build_id
+
+# ──────────────────────────────────────────
+# IDE / Editor
+# ──────────────────────────────────────────
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# ──────────────────────────────────────────
+# OS Files
+# ──────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ──────────────────────────────────────────
+# Misc
+# ──────────────────────────────────────────
+*.class
+*.log
+*.pyc
+*.swp
+.atom/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+app.*.symbols
+app.*.map.json

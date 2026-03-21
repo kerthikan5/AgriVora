@@ -1,0 +1,133 @@
+├── .gitignore
+├── README.md
+├── backend
+│   ├── .env
+│   ├── .env.example
+│   ├── .gitignore
+│   ├── app
+│   │   ├── __init__.py
+│   │   ├── api
+│   │   │   ├── api_v1
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── api.py
+│   │   │   │   └── endpoints
+│   │   │   │       ├── __init__.py
+│   │   │   │       ├── auth.py
+│   │   │   │       ├── chat.py
+│   │   │   │       ├── history.py
+│   │   │   │       ├── image.py
+│   │   │   │       ├── location.py
+│   │   │   │       ├── recommend.py
+│   │   │   │       ├── sensor.py
+│   │   │   │       └── user.py
+│   │   │   ├── crop_lgbm_api.py
+│   │   │   └── soil_cnn.py
+│   │   ├── core
+│   │   │   └── __init__.py
+│   │   ├── db
+│   │   │   └── __init__.py
+│   │   ├── main.py
+│   │   ├── models
+│   │   │   ├── crop_lgbm
+│   │   │   │   ├── agrivora_crop_model.pkl
+│   │   │   │   └── agrivora_feature_columns.pkl
+│   │   │   └── soil_cnn
+│   │   │       └── soil_model.h5
+│   │   ├── schemas
+│   │   │   └── crop_lgbm_schema.py
+│   │   ├── services
+│   │   │   ├── cnn_service.py
+│   │   │   ├── crop_lgbm_service.py
+│   │   │   ├── recommend_service.py
+│   │   │   ├── soilgrids_service.py
+│   │   │   └── weather_service.py
+│   │   └── utils
+│   │       ├── __init__.py
+│   │       ├── cache.py
+│   │       ├── email.py
+│   │       └── firestore.py
+│   ├── check_model.py
+│   ├── docs
+│   │   └── firestore_schema.md
+│   ├── firebase-key.json
+│   ├── requirements.txt
+│   ├── run.py
+│   ├── test_all_endpoints.py
+│   ├── test_api.py
+│   ├── test_ble.py
+│   ├── test_cnn.py
+│   ├── test_debug.py
+│   ├── test_fs.py
+│   ├── test_lgbm.py
+│   └── test_soil.jpg
+├── docs
+│   ├── .gitkeep
+│   └── ARCHITECTURE.md
+├── frontend
+│   ├── .flutter-plugins-dependencies
+│   ├── .gitignore
+│   ├── README.md
+│   ├── analysis_options.yaml
+│   ├── assets
+│   │   ├── .gitkeep
+│   │   └── images
+│   │       ├── bg.png
+│   │       ├── bg_fields.png
+│   │       ├── chilli.png
+│   │       ├── farmer.png
+│   │       ├── iot_esp_phone.png
+│   │       ├── logo_agrivora.png
+│   │       ├── okra.png
+│   │       ├── phone.png
+│   │       ├── robot.png
+│   │       └── tomato.png
+│   ├── lib
+│   │   ├── main.dart
+│   │   ├── pages
+│   │   │   ├── .gitkeep
+│   │   │   ├── account_settings_page.dart
+│   │   │   ├── ai_chat_page.dart
+│   │   │   ├── crop_overview_page.dart
+│   │   │   ├── crop_recom_page.dart
+│   │   │   ├── forgot_password_page.dart
+│   │   │   ├── history_page.dart
+│   │   │   ├── home_page.dart
+│   │   │   ├── login_page.dart
+│   │   │   ├── main_screen.dart
+│   │   │   ├── manual_soil_analysis_page.dart
+│   │   │   ├── map_page.dart
+│   │   │   ├── permission_page.dart
+│   │   │   ├── predict_soil.dart
+│   │   │   ├── profile_page.dart
+│   │   │   ├── role_select_page.dart
+│   │   │   ├── signup_page.dart
+│   │   │   ├── soil_analysis_page.dart
+│   │   │   └── welcome_page.dart
+│   │   ├── scan_flow
+│   │   │   ├── .gitkeep
+│   │   │   ├── gps_step_screen.dart
+│   │   │   ├── image_step_screen.dart
+│   │   │   ├── ph_step_screen.dart
+│   │   │   └── start_scan_screen.dart
+│   │   ├── services
+│   │   │   ├── api_service.dart
+│   │   │   ├── ble_service.dart
+│   │   │   ├── location_service.dart
+│   │   │   └── session_service.dart
+│   │   ├── theme.dart
+│   │   └── widgets
+│   │       └── agri_bottom_nav_bar.dart
+│   ├── pubspec.lock
+│   ├── pubspec.yaml
+│   └── test
+│       └── widget_test.dart
+├── iot
+│   ├── .gitkeep
+│   └── esp32_ph_sensor
+├── ml
+│   ├── artifacts
+│   │   └── crop_lgbm
+│   │       └── feature_columns.json
+│   └── inference
+├── start_dev.ps1
+└── tree_script.py
