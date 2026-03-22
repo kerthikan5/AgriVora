@@ -32,7 +32,7 @@ class _SoilAnalysisPageState extends State<SoilAnalysisPage> {
   // Manual mode state
   final TextEditingController _phController = TextEditingController();
   String _selectedSoilColor = 'Brown';
-  String _selectedSoilTexture = 'Loamy';
+  String _selectedSoilTexture = 'loamy soil';
   bool _isManualValid = false;
 
   // Sensor mode state
@@ -156,6 +156,7 @@ class _SoilAnalysisPageState extends State<SoilAnalysisPage> {
     if (ph != null) {
       Navigator.pushNamed(context, '/crop-recom', arguments: {
         'ph': ph,
+        // _selectedSoilTexture is already normalised (e.g. "loamy soil")
         'soilType': _selectedSoilTexture,
       });
     }
@@ -509,10 +510,15 @@ class _SoilAnalysisPageState extends State<SoilAnalysisPage> {
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none),
             ),
-            items: ['Loamy', 'Clay', 'Sandy', 'Silt']
-                .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                .toList(),
-            onChanged: (val) => setState(() => _selectedSoilTexture = val!),
+            items: const [
+              DropdownMenuItem(value: 'loamy soil',    child: Text('Loamy')),
+              DropdownMenuItem(value: 'clay soil',     child: Text('Clay')),
+              DropdownMenuItem(value: 'sandy soil',    child: Text('Sandy')),
+              DropdownMenuItem(value: 'neutral soil',  child: Text('Silt / Neutral')),
+              DropdownMenuItem(value: 'acidic soil',   child: Text('Acidic')),
+              DropdownMenuItem(value: 'alkaline soil', child: Text('Alkaline')),
+            ],
+            onChanged: (val) => setState(() => _selectedSoilTexture = val ?? 'loamy soil'),
           ),
           const SizedBox(height: 16),
 

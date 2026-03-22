@@ -93,7 +93,7 @@ class _ManualSoilAnalysisPageState extends State<ManualSoilAnalysisPage> {
         ph: ph,
         nitrogen: 40.0,
         carbon: 1.2, // Default or implied
-        soilType: 'Loamy',
+        soilType: 'loamy soil',
       );
 
       if (mounted) {
