@@ -62,13 +62,11 @@ class _AIChatPageState extends State<AIChatPage> {
       }
     } catch (e) {
       if (mounted) {
-        String errorMsg = e.toString().contains('Exception: ')
-            ? e.toString().replaceAll('Exception: ', '')
-            : "Connection error. Ensure backend is running.";
+        const errorMsg = "The AI assistant is temporarily unavailable. Please try again shortly.";
 
         setState(() {
           _messages.add(
-              ChatMessage(text: "AgriVora Error: $errorMsg", isUser: false));
+              ChatMessage(text: errorMsg, isUser: false));
           _isLoading = false;
         });
         _scrollToBottom();

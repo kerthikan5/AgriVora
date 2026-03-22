@@ -327,105 +327,113 @@ class _MapPageState extends State<MapPage> {
                             borderRadius: BorderRadius.circular(26),
                             child: Stack(
                               children: [
-                                _currentLocation == null
-                                    ? Container(
-                                        color:
-                                            Colors.white.withValues(alpha: 0.3),
-                                        child: Center(
-                                          child: _locationDenied
-                                              ? Column(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    const Icon(
-                                                        Icons.location_off,
-                                                        color:
-                                                            Color(0xFFD32F2F),
-                                                        size: 40),
-                                                    const SizedBox(height: 12),
-                                                    const Text(
-                                                        "Location access denied.",
-                                                        style: TextStyle(
-                                                            color: Color(
-                                                                0xFFD32F2F),
-                                                            fontWeight:
-                                                                FontWeight
-                                                                    .bold)),
-                                                    TextButton(
-                                                        onPressed:
-                                                            _getUserLocation,
-                                                        child: const Text(
-                                                            "Enable Location",
-                                                            style: TextStyle(
-                                                                color: Color(
-                                                                    0xFF2E7D32),
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .bold))),
-                                                  ],
-                                                )
-                                              : const Column(
-                                                  mainAxisSize:
-                                                      MainAxisSize.min,
-                                                  children: [
-                                                    CircularProgressIndicator(
-                                                        color:
-                                                            Color(0xFF2E7D32)),
-                                                    SizedBox(height: 12),
-                                                    Text(
-                                                        "Getting your location…",
-                                                        style: TextStyle(
-                                                            color: Color(
-                                                                0xFF2E7D32),
-                                                            fontWeight:
-                                                                FontWeight
-                                                                    .w600)),
-                                                  ],
-                                                ),
-                                        ),
-                                      )
-                                    : FlutterMap(
-                                        mapController: _mapController,
-                                        options: MapOptions(
-                                          initialCenter: LatLng(
-                                              _currentLocation!.latitude,
-                                              _currentLocation!.longitude),
-                                          initialZoom: 16,
-                                          onMapReady: () {
-                                            setState(() => _mapReady = true);
-                                          },
-                                        ),
-                                        children: [
-                                          TileLayer(
-                                            urlTemplate:
-                                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                            userAgentPackageName:
-                                                'com.example.agrivora_ui_test',
-                                          ),
-                                          MarkerLayer(
-                                            markers: [
-                                              Marker(
-                                                point: LatLng(
-                                                    _currentLocation!.latitude,
-                                                    _currentLocation!
-                                                        .longitude),
-                                                width: 60,
-                                                height: 60,
-                                                child: GestureDetector(
-                                                  onTap: () =>
-                                                      _showDetailedSoilInsight(
-                                                          context),
-                                                  child: const Icon(
-                                                    Icons.location_on,
-                                                    color: Color(0xFFD32F2F),
-                                                    size: 50,
-                                                  ),
+                                  // ── FlutterMap rendered unconditionally ─────────────────────
+                                  FlutterMap(
+                                    mapController: _mapController,
+                                    options: MapOptions(
+                                      initialCenter: LatLng(
+                                          _currentLocation?.latitude ?? 6.9271,
+                                          _currentLocation?.longitude ?? 79.8612),
+                                      initialZoom: _currentLocation != null ? 16 : 10,
+                                      onMapReady: () {
+                                        setState(() => _mapReady = true);
+                                      },
+                                    ),
+                                    children: [
+                                      TileLayer(
+                                        urlTemplate:
+                                            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                        userAgentPackageName:
+                                            'com.example.agrivora_ui_test',
+                                      ),
+                                      if (_currentLocation != null)
+                                        MarkerLayer(
+                                          markers: [
+                                            Marker(
+                                              point: LatLng(
+                                                  _currentLocation!.latitude,
+                                                  _currentLocation!.longitude),
+                                              width: 60,
+                                              height: 60,
+                                              child: GestureDetector(
+                                                onTap: () =>
+                                                    _showDetailedSoilInsight(context),
+                                                child: const Icon(
+                                                  Icons.location_on,
+                                                  color: Color(0xFFD32F2F),
+                                                  size: 50,
                                                 ),
                                               ),
-                                            ],
-                                          ),
-                                        ],
+                                            ),
+                                          ],
+                                        ),
+                                    ],
+                                  ),
+
+                                  // ── Conditional Loading/Denied Banner Overlay ───────────────
+                                  if (_currentLocation == null)
+                                    Positioned(
+                                      top: 12,
+                                      left: 12,
+                                      right: 12,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 16, vertical: 12),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withValues(alpha: 0.9),
+                                          borderRadius: BorderRadius.circular(16),
+                                          boxShadow: [
+                                            BoxShadow(
+                                                color: Colors.black.withValues(
+                                                    alpha: 0.1),
+                                                blurRadius: 10,
+                                                offset: const Offset(0, 4))
+                                          ],
+                                        ),
+                                        child: _locationDenied
+                                            ? Row(
+                                                children: [
+                                                  const Icon(
+                                                      Icons.location_off,
+                                                      color: Color(0xFFD32F2F),
+                                                      size: 24),
+                                                  const SizedBox(width: 12),
+                                                  const Expanded(
+                                                    child: Text(
+                                                        "Location access denied.",
+                                                        style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFD32F2F),
+                                                        )),
+                                                  ),
+                                                  TextButton(
+                                                      onPressed: _getUserLocation,
+                                                      child: const Text("Enable",
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF2E7D32)))),
+                                                ],
+                                              )
+                                            : Row(
+                                                children: const [
+                                                  SizedBox(
+                                                    width: 18,
+                                                    height: 18,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: Color(0xFF2E7D32),
+                                                    ),
+                                                  ),
+                                                  SizedBox(width: 12),
+                                                  Text("Getting live location…",
+                                                      style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF2E7D32))),
+                                                ],
+                                              ),
                                       ),
+                                    ),
 
                                 // Map Overlay Action Buttons
                                 if (_currentLocation != null)
