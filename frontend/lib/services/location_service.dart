@@ -5,8 +5,6 @@
 import 'package:geolocator/geolocator.dart';
 
 class LocationService {
-  static Position? latestPosition;
-
   static Future<Position> getCurrentLocation() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
@@ -25,10 +23,8 @@ class LocationService {
           "Location permission denied forever. Enable from settings.");
     }
 
-    final pos = await Geolocator.getCurrentPosition(
+    return Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.best,
     );
-    latestPosition = pos; // Cache the position globally for immediate access on other screens
-    return pos;
   }
 }
