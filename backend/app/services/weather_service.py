@@ -23,7 +23,7 @@ def fetch_weather_data(lat: float, lon: float):
         params = {
             "latitude": lat,
             "longitude": lon,
-            "current": ["temperature_2m", "relative_humidity_2m", "precipitation"],
+            "current": "temperature_2m,relative_humidity_2m,precipitation",
             "timezone": "auto"
         }
 

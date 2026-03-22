@@ -101,6 +101,8 @@ class _MapPageState extends State<MapPage> {
           _mapController.move(LatLng(lastPos.latitude, lastPos.longitude), 16);
         } catch (_) {}
       }
+      // Fetch weather load immediately for this cached coordinate
+      await _fetchWeatherData(lastPos);
     }
 
     try {
@@ -155,7 +157,7 @@ class _MapPageState extends State<MapPage> {
       final summary = await ApiService.getLocationSummary(lat, lon)
           .timeout(const Duration(seconds: 8));
       final weather = summary['weatherSummary'];
-      if (mounted && weather != null) {
+      if (mounted && weather != null && weather['temperature'] != null) {
         setState(() {
           _temperature = "${weather['temperature'] ?? '--'}°C";
           _rainfall = "${weather['rainfall'] ?? '--'}mm";
