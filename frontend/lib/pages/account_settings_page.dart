@@ -44,9 +44,8 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
   Future<void> _refreshProfileSilently() async {
     if (ApiService.userId == null) return;
     try {
-      final base = await ApiService.getBaseUrl();
       final response = await http.get(
-        Uri.parse('$base/api/users/profile/${ApiService.userId}'),
+        Uri.parse('${ApiService.baseUrl}/api/users/profile/${ApiService.userId}'),
         headers: {'Accept': 'application/json'},
       ).timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {

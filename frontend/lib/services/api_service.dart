@@ -1,6 +1,9 @@
 /// **ApiService**
 /// Responsible for: All backend API calls in the application.
-/// Role: Encapsulates network requests, dynamic baseUrl discovery, error handling, and JSON parsing.
+/// Role: Encapsulates network requests to the deployed Railway backend,
+///       error handling, and JSON parsing.
+///
+/// Backend base URL: https://agrivora-production.up.railway.app
 
 import 'dart:async';
 import 'dart:convert';
@@ -11,91 +14,13 @@ import 'session_service.dart';
 
 class ApiService {
   // ─────────────────────────────────────────────────────────────
-  // Dynamic base-URL discovery
+  // Single production base URL — no discovery logic needed.
   // ─────────────────────────────────────────────────────────────
-  // Ordered candidates:
-  //   1. 127.0.0.1        — localhost via `adb reverse tcp:8000 tcp:8000` (USB cable) ← preferred
-  //   2. 192.168.8.104    — PC's current LAN/Wi-Fi IP (update if your router changes)
-  //   3. 172.20.10.4      — PC hotspot IP (iPhone personal hotspot subnet)
-  //   4. 172.20.10.2      — alternate hotspot gateway
-  //   5. 172.21.96.1      — secondary hotspot/VPN subnet
-  //   6. 10.0.2.2         — Android emulator loopback to host PC
-  static const List<String> _candidateBaseUrls = [
-    "https://agrivora-production.up.railway.app",
-  ];
+  static const String baseUrl =
+      'https://agrivora-production.up.railway.app';
 
-  static String? _resolvedBaseUrl;
-  static bool _isResolving = false;
-  static final List<Completer<String>> _resolveWaiters = [];
-
-  /// Trigger used to notify the UI (HistoryPage) that it needs to refresh
+  /// Trigger used to notify the UI (HistoryPage) that it needs to refresh.
   static final ValueNotifier<int> historyRefreshTrigger = ValueNotifier(0);
-
-  /// Returns the cached working base URL, auto-discovering on first call.
-  /// Retries up to [maxAttempts] times with [retryDelay] between attempts so
-  /// the app waits for the backend to start rather than giving up immediately.
-  static Future<String> getBaseUrl({int maxAttempts = 3}) async {
-    if (kIsWeb) return "https://agrivora-production.up.railway.app";
-    if (_resolvedBaseUrl != null) return _resolvedBaseUrl!;
-
-    if (_isResolving) {
-      final c = Completer<String>();
-      _resolveWaiters.add(c);
-      return c.future;
-    }
-
-    _isResolving = true;
-    String found = _candidateBaseUrls.first;
-    bool connected = false;
-
-    outer:
-    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
-      for (final url in _candidateBaseUrls) {
-        try {
-          final r = await http.get(Uri.parse('$url/health'), headers: {
-            'Accept': 'application/json'
-          }).timeout(const Duration(seconds: 6));
-          if (r.statusCode == 200) {
-            found = url;
-            connected = true;
-            debugPrint(
-                '[ApiService] ✅ Connected to backend at $url (attempt $attempt)');
-            break outer;
-          }
-        } catch (_) {
-          debugPrint('[ApiService] ❌ $url unreachable (attempt $attempt)');
-        }
-      }
-      if (!connected && attempt < maxAttempts) {
-        debugPrint(
-            '[ApiService] ⏳ Retrying in 2 s... (attempt $attempt/$maxAttempts)');
-        await Future.delayed(const Duration(seconds: 2));
-      }
-    }
-
-    if (!connected) {
-      debugPrint(
-          '[ApiService] ⚠️ All candidates failed after $maxAttempts attempts. Using ${_candidateBaseUrls.first} as fallback.');
-    }
-
-    _resolvedBaseUrl = found;
-    _isResolving = false;
-    for (final c in _resolveWaiters) {
-      c.complete(found);
-    }
-    _resolveWaiters.clear();
-    return found;
-  }
-
-  /// Force re-discovery on next request (call after a connection failure).
-  static void resetBaseUrl() {
-    _resolvedBaseUrl = null;
-    debugPrint(
-        '[ApiService] Base URL reset — will re-discover on next request');
-  }
-
-  /// Sync getter — safe fallback. Use getBaseUrl() in async contexts.
-  static String get baseUrl => _resolvedBaseUrl ?? _candidateBaseUrls.first;
 
   // ─────────────────────────────────────────────────────────────
   // Session
@@ -126,9 +51,9 @@ class ApiService {
       }
       if (decoded['message'] != null) return decoded['message'].toString();
       if (decoded['error'] != null) return decoded['error'].toString();
-      return "Server error (${response.statusCode})";
+      return 'Server error (${response.statusCode})';
     } catch (_) {
-      return "Server error (${response.statusCode}): ${response.body}";
+      return 'Server error (${response.statusCode}): ${response.body}';
     }
   }
 
@@ -146,7 +71,6 @@ class ApiService {
   static Future<Map<String, dynamic>> login(
       String emailOrPhone, String password) async {
     try {
-      final base = await getBaseUrl();
       final body = {
         'email_or_phone': emailOrPhone.trim(),
         'password': password.trim(),
@@ -154,7 +78,7 @@ class ApiService {
 
       final response = await http
           .post(
-            Uri.parse('$base/api/auth/login'),
+            Uri.parse('$baseUrl/api/auth/login'),
             headers: _headers,
             body: jsonEncode(body),
           )
@@ -173,17 +97,11 @@ class ApiService {
         throw Exception(_extractErrorMessage(response));
       }
     } on TimeoutException {
-      throw Exception('Connection timed out. Check if backend is running.');
+      throw Exception('Connection timed out. Check your internet connection.');
     } on SocketException catch (e) {
-      resetBaseUrl();
-      throw Exception(
-          'Cannot reach backend: ${e.message}. Check your connection.');
+      throw Exception('Cannot reach backend: ${e.message}. Check your connection.');
     } catch (e) {
-      if (e.toString().contains('ClientException') ||
-          e.toString().contains('SocketException')) {
-        resetBaseUrl();
-      }
-      throw Exception('Connection error: $e');
+      throw Exception('Login error: $e');
     }
   }
 
@@ -194,10 +112,8 @@ class ApiService {
     required String password,
   }) async {
     try {
-      final base = await getBaseUrl();
       final pw = password.trim();
-      // ignore: avoid_print
-      print(
+      debugPrint(
           'SIGNUP password chars=${pw.length}, bytes=${utf8.encode(pw).length}');
 
       final body = {
@@ -206,12 +122,11 @@ class ApiService {
         'phone': phone.trim(),
         'password': pw,
       };
-      // ignore: avoid_print
-      print('SIGNUP body => ${jsonEncode(body)}');
+      debugPrint('SIGNUP body => ${jsonEncode(body)}');
 
       final response = await http
           .post(
-            Uri.parse('$base/api/auth/signup'),
+            Uri.parse('$baseUrl/api/auth/signup'),
             headers: _headers,
             body: jsonEncode(body),
           )
@@ -226,13 +141,11 @@ class ApiService {
         throw Exception(_extractErrorMessage(response));
       }
     } on TimeoutException {
-      throw Exception('Connection timed out. Check if backend is running.');
+      throw Exception('Connection timed out. Check your internet connection.');
     } on SocketException catch (e) {
-      resetBaseUrl();
       throw Exception('Cannot reach backend: ${e.message}.');
     } catch (e) {
-      if (e.toString().contains('ClientException')) resetBaseUrl();
-      throw Exception('Connection error: $e');
+      throw Exception('Signup error: $e');
     }
   }
 
@@ -241,10 +154,9 @@ class ApiService {
   // ─────────────────────────────────────────────────────────────
   static Future<Map<String, dynamic>> requestResetOTP(String email) async {
     try {
-      final base = await getBaseUrl();
       final response = await http
           .post(
-            Uri.parse('$base/api/auth/forgot-password/request-otp'),
+            Uri.parse('$baseUrl/api/auth/forgot-password/request-otp'),
             headers: _headers,
             body: jsonEncode({'email': email.trim().toLowerCase()}),
           )
@@ -259,7 +171,6 @@ class ApiService {
         throw Exception(_extractErrorMessage(response));
       }
     } catch (e) {
-      if (e.toString().contains('ClientException')) resetBaseUrl();
       throw Exception('Error requesting OTP: $e');
     }
   }
@@ -267,10 +178,9 @@ class ApiService {
   static Future<Map<String, dynamic>> verifyResetOTP(
       String email, String otp) async {
     try {
-      final base = await getBaseUrl();
       final response = await http
           .post(
-            Uri.parse('$base/api/auth/forgot-password/verify-otp'),
+            Uri.parse('$baseUrl/api/auth/forgot-password/verify-otp'),
             headers: _headers,
             body: jsonEncode({
               'email': email.trim().toLowerCase(),
@@ -288,7 +198,6 @@ class ApiService {
         throw Exception(_extractErrorMessage(response));
       }
     } catch (e) {
-      if (e.toString().contains('ClientException')) resetBaseUrl();
       throw Exception('Error verifying OTP: $e');
     }
   }
@@ -296,10 +205,9 @@ class ApiService {
   static Future<Map<String, dynamic>> resetPassword(
       String email, String otp, String newPassword) async {
     try {
-      final base = await getBaseUrl();
       final response = await http
           .post(
-            Uri.parse('$base/api/auth/forgot-password/reset'),
+            Uri.parse('$baseUrl/api/auth/forgot-password/reset'),
             headers: _headers,
             body: jsonEncode({
               'email': email.trim().toLowerCase(),
@@ -318,7 +226,6 @@ class ApiService {
         throw Exception(_extractErrorMessage(response));
       }
     } catch (e) {
-      if (e.toString().contains('ClientException')) resetBaseUrl();
       throw Exception('Error resetting password: $e');
     }
   }
@@ -332,14 +239,13 @@ class ApiService {
   }) async {
     if (userId == null) throw Exception('User not logged in');
     try {
-      final base = await getBaseUrl();
       final body = <String, dynamic>{};
       if (fullName != null) body['full_name'] = fullName;
       if (phone != null) body['phone'] = phone;
 
       final response = await http
           .put(
-            Uri.parse('$base/api/users/profile/$userId'),
+            Uri.parse('$baseUrl/api/users/profile/$userId'),
             headers: _headers,
             body: jsonEncode(body),
           )
@@ -356,7 +262,6 @@ class ApiService {
         throw Exception(_extractErrorMessage(response));
       }
     } catch (e) {
-      if (e.toString().contains('ClientException')) resetBaseUrl();
       throw Exception('Error updating profile: $e');
     }
   }
@@ -367,10 +272,9 @@ class ApiService {
   }) async {
     if (userId == null) throw Exception('User not logged in');
     try {
-      final base = await getBaseUrl();
       final response = await http
           .put(
-            Uri.parse('$base/api/users/$userId/change-password'),
+            Uri.parse('$baseUrl/api/users/$userId/change-password'),
             headers: _headers,
             body: jsonEncode({
               'old_password': oldPassword,
@@ -388,12 +292,11 @@ class ApiService {
         throw Exception(_extractErrorMessage(response));
       }
     } catch (e) {
-      if (e.toString().contains('ClientException')) resetBaseUrl();
       throw Exception('Error changing password: $e');
     }
   }
 
-  /// Clears the in-memory session AND persisted prefs
+  /// Clears the in-memory session AND persisted prefs.
   static Future<void> logout() async {
     userId = null;
     userName = null;
@@ -409,26 +312,24 @@ class ApiService {
     if (userId == null) return;
     data['userId'] = userId;
     try {
-      final base = await getBaseUrl();
       await http
           .post(
-            Uri.parse('$base/history/save'),
+            Uri.parse('$baseUrl/history/save'),
             headers: _headers,
             body: jsonEncode(data),
           )
           .timeout(const Duration(seconds: 15));
       historyRefreshTrigger.value++;
     } catch (e) {
-      debugPrint("Failed to save to history: $e");
+      debugPrint('Failed to save to history: $e');
     }
   }
 
   static Future<List<dynamic>> getUserHistory() async {
     if (userId == null) throw Exception('User not logged in');
     try {
-      final base = await getBaseUrl();
       final response = await http
-          .get(Uri.parse('$base/history/$userId'), headers: _headers)
+          .get(Uri.parse('$baseUrl/history/$userId'), headers: _headers)
           .timeout(const Duration(seconds: 15));
 
       final decoded = _safeJsonDecode(response.body);
@@ -440,7 +341,6 @@ class ApiService {
         throw Exception(_extractErrorMessage(response));
       }
     } catch (e) {
-      if (e.toString().contains('ClientException')) resetBaseUrl();
       throw Exception('Error fetching history: $e');
     }
   }
@@ -457,7 +357,6 @@ class ApiService {
   }) async {
     if (userId == null) throw Exception('User not logged in');
     try {
-      final base = await getBaseUrl();
       final body = {
         'user_id': userId,
         'soil_type': soilType,
@@ -469,7 +368,7 @@ class ApiService {
 
       final response = await http
           .post(
-            Uri.parse('$base/recommend'),
+            Uri.parse('$baseUrl/recommend'),
             headers: _headers,
             body: jsonEncode(body),
           )
@@ -485,9 +384,8 @@ class ApiService {
         throw Exception(_extractErrorMessage(response));
       }
     } on TimeoutException {
-      throw Exception('Connection timed out. Check if backend is running.');
+      throw Exception('Connection timed out. Check your internet connection.');
     } catch (e) {
-      if (e.toString().contains('ClientException')) resetBaseUrl();
       throw Exception('Connection error: $e');
     }
   }
@@ -498,10 +396,9 @@ class ApiService {
   static Future<Map<String, dynamic>> getLocationSummary(
       double lat, double lon) async {
     try {
-      final base = await getBaseUrl();
       final response = await http
           .post(
-            Uri.parse('$base/location/summary'),
+            Uri.parse('$baseUrl/location/summary'),
             headers: _headers,
             body: jsonEncode({'lat': lat, 'lon': lon}),
           )
@@ -516,9 +413,8 @@ class ApiService {
         throw Exception(_extractErrorMessage(response));
       }
     } on TimeoutException {
-      throw Exception('Connection timed out. Check if backend is running.');
+      throw Exception('Connection timed out. Check your internet connection.');
     } catch (e) {
-      if (e.toString().contains('ClientException')) resetBaseUrl();
       throw Exception('Connection error: $e');
     }
   }
@@ -527,13 +423,12 @@ class ApiService {
   // Soil Image Analysis (CNN)
   // ─────────────────────────────────────────────────────────────
   static Future<Map<String, dynamic>> analyzeSoilImage(File imageFile) async {
-    // TF loads the model on first request — can take 60-90 s cold start.
+    // TF loads the model on first request — can take 60–90 s on cold start.
     const kAnalysisTimeout = Duration(seconds: 120);
     try {
-      final base = await getBaseUrl();
       final request = http.MultipartRequest(
         'POST',
-        Uri.parse('$base/image/texture'),
+        Uri.parse('$baseUrl/image/texture'),
       );
       request.files.add(
         await http.MultipartFile.fromPath('file', imageFile.path),
@@ -556,7 +451,6 @@ class ApiService {
           'The first scan takes longer while the AI model loads.\n'
           'Please try again — it will be much faster.');
     } catch (e) {
-      if (e.toString().contains('ClientException')) resetBaseUrl();
       throw Exception('Upload error: $e');
     }
   }
@@ -574,7 +468,6 @@ class ApiService {
     required String soilType,
   }) async {
     try {
-      final base = await getBaseUrl();
       final body = {
         'user_id': userId,
         'temperature': temperature,
@@ -588,7 +481,7 @@ class ApiService {
 
       final response = await http
           .post(
-            Uri.parse('$base/crop/recommend'),
+            Uri.parse('$baseUrl/crop/recommend'),
             headers: _headers,
             body: jsonEncode(body),
           )
@@ -613,20 +506,18 @@ class ApiService {
     } on TimeoutException {
       throw Exception('Crop recommendation timed out.');
     } catch (e) {
-      if (e.toString().contains('ClientException')) resetBaseUrl();
       throw Exception('Connection error: $e');
     }
   }
 
   // ─────────────────────────────────────────────────────────────
-  // Chat AI  (uses same resolved URL, no separate IP list needed)
+  // Chat AI
   // ─────────────────────────────────────────────────────────────
   static Future<Map<String, dynamic>> askChatAI(String message) async {
     try {
-      final base = await getBaseUrl();
       final response = await http
           .post(
-            Uri.parse('$base/chat'),
+            Uri.parse('$baseUrl/chat'),
             headers: _headers,
             body: jsonEncode({'message': message}),
           )
@@ -647,19 +538,17 @@ class ApiService {
     } on TimeoutException {
       throw Exception('Connection timed out. Ensure backend is running.');
     } catch (e) {
-      if (e.toString().contains('ClientException')) resetBaseUrl();
       throw Exception('Chat error: $e');
     }
   }
 
   // ─────────────────────────────────────────────────────────────
-  // Sensor (pH / BLE)
+  // Sensor (pH / BLE sessions)
   // ─────────────────────────────────────────────────────────────
   static Future<Map<String, dynamic>> searchDevice() async {
     try {
-      final base = await getBaseUrl();
       final response = await http
-          .get(Uri.parse('$base/ph/search_device'), headers: _headers)
+          .get(Uri.parse('$baseUrl/ph/search_device'), headers: _headers)
           .timeout(const Duration(seconds: 15));
 
       final decoded = _safeJsonDecode(response.body);
@@ -671,17 +560,15 @@ class ApiService {
         throw Exception(_extractErrorMessage(response));
       }
     } catch (e) {
-      if (e.toString().contains('ClientException')) resetBaseUrl();
       throw Exception('Error searching device: $e');
     }
   }
 
   static Future<Map<String, dynamic>> getLivePh() async {
     try {
-      final base = await getBaseUrl();
-      final uid = userId ?? "guest";
+      final uid = userId ?? 'guest';
       final response = await http
-          .get(Uri.parse('$base/ph/live/$uid'), headers: _headers)
+          .get(Uri.parse('$baseUrl/ph/live/$uid'), headers: _headers)
           .timeout(const Duration(seconds: 15));
 
       final decoded = _safeJsonDecode(response.body);
@@ -693,23 +580,25 @@ class ApiService {
         throw Exception(_extractErrorMessage(response));
       }
     } catch (e) {
-      if (e.toString().contains('ClientException')) resetBaseUrl();
       throw Exception('Error fetching live pH: $e');
     }
   }
 
   // ─────────────────────────────────────────────────────────────
   // Health check
+  // Compatible with both {"status":"ok"} and {"success":true}
   // ─────────────────────────────────────────────────────────────
   static Future<bool> checkHealth() async {
     try {
-      final base = await getBaseUrl();
       final response = await http
-          .get(Uri.parse('$base/health'), headers: _headers)
+          .get(Uri.parse('$baseUrl/health'), headers: _headers)
           .timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final decoded = _safeJsonDecode(response.body);
-        return decoded is Map && decoded['success'] == true;
+        if (decoded is Map) {
+          // Accept either response shape the backend may return.
+          return decoded['success'] == true || decoded['status'] == 'ok';
+        }
       }
       return false;
     } catch (_) {
