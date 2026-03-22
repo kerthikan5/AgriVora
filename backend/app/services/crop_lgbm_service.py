@@ -4,18 +4,24 @@ Responsible for: Loading and formatting input for the LightGBM crop prediction m
 """
 
 import os
+import re
+import requests
 import joblib
 import pandas as pd
+from pathlib import Path
 
 BASE_DIR  = os.path.dirname(os.path.dirname(__file__))   # backend/app
-MODEL_DIR = os.path.join(BASE_DIR, "models", "crop_lgbm")
+MODEL_DIR = Path(BASE_DIR) / "models" / "crop_lgbm"
 
-MODEL_PATH = os.path.join(MODEL_DIR, "agrivora_crop_model.pkl")
-COLS_PATH  = os.path.join(MODEL_DIR, "agrivora_feature_columns.pkl")
+MODEL_PATH = MODEL_DIR / "agrivora_crop_model.pkl"
+COLS_PATH  = MODEL_DIR / "agrivora_feature_columns.pkl"
+
+LGBM_MODEL_URL = os.getenv("LGBM_MODEL_URL")
+LGBM_COLS_URL  = os.getenv("LGBM_COLS_URL")
 
 _model        = None
 _feature_cols = None
-_load_error   = None   # Stores the load error so we can return it, not crash
+_load_error   = None
 
 # Approximate ideal pH ranges for common crops in ML datasets
 IDEAL_PH = {
@@ -32,7 +38,7 @@ IDEAL_PH = {
 _SOIL_TYPE_NORMALISE = {
     "loamy":          "loamy soil",
     "loamy soil":     "loamy soil",
-    "clay":           "acidic soil",   # rough mapping
+    "clay":           "acidic soil",
     "clay soil":      "acidic soil",
     "sandy":          "neutral soil",
     "sandy soil":     "neutral soil",
@@ -48,16 +54,89 @@ _SOIL_TYPE_NORMALISE = {
 }
 
 
+def _to_direct_gdrive_url(url: str) -> str:
+    match = re.search(r"/file/d/([a-zA-Z0-9_-]+)", url)
+    if match:
+        fid = match.group(1)
+        return f"https://drive.google.com/uc?export=download&id={fid}&confirm=t"
+    if "drive.google.com/uc" in url and "confirm=" not in url:
+        return url + "&confirm=t"
+    return url
+
+
+def download_file(url: str, dest: Path):
+    download_url = _to_direct_gdrive_url(url)
+    print(f"[LGBM] Downloading from: {download_url}")
+
+    session = requests.Session()
+    hdrs = {"User-Agent": "Mozilla/5.0"}
+
+    resp = session.get(download_url, headers=hdrs, stream=True, timeout=180)
+    resp.raise_for_status()
+
+    content_type = resp.headers.get("Content-Type", "")
+    if "text/html" in content_type:
+        try:
+            from bs4 import BeautifulSoup
+            soup = BeautifulSoup(resp.text, "html.parser")
+            form = soup.find("form")
+            if form:
+                action = form.get("action", download_url)
+                params = {inp.get("name"): inp.get("value") for inp in form.find_all("input") if inp.get("name")}
+                resp = session.get(action, params=params, headers=hdrs, stream=True, timeout=180)
+                resp.raise_for_status()
+                content_type = resp.headers.get("Content-Type", "")
+        except ImportError:
+            pass
+
+        if "text/html" in content_type:
+            raise RuntimeError(f"URL returned an HTML page instead of model files for {dest.name}")
+
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    with open(dest, "wb") as f:
+        for chunk in resp.iter_content(1024 * 1024):
+            if chunk:
+                f.write(chunk)
+
+
+def ensure_model_files():
+    MODEL_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Check model file
+    if not MODEL_PATH.exists() or MODEL_PATH.stat().st_size < 1024:
+        # Standard pointer fails on weight sizes
+        url = LGBM_MODEL_URL or os.getenv("LGBM_MODEL_URL")
+        if not url:
+            raise RuntimeError(
+                "LGBM_MODEL_URL environment variable is not set. "
+                "Ensure agrivora_crop_model.pkl exists or provide a download URL in Railway settings."
+            )
+        print("[LGBM] Fetching model …")
+        download_file(url, MODEL_PATH)
+
+    # Check columns file
+    if not COLS_PATH.exists() or COLS_PATH.stat().st_size < 10:
+        url = LGBM_COLS_URL or os.getenv("LGBM_COLS_URL")
+        if not url:
+            raise RuntimeError(
+                "LGBM_COLS_URL environment variable is not set. "
+                "Ensure agrivora_feature_columns.pkl exists or provide a download URL in Railway settings."
+            )
+        print("[LGBM] Fetching feature columns …")
+        download_file(url, COLS_PATH)
+
+
 def _load_once():
     global _model, _feature_cols, _load_error
     if _model is not None:
-        return  # already loaded
+        return
     if _load_error is not None:
-        raise RuntimeError(_load_error)  # previously failed — re-raise immediately
+        raise RuntimeError(_load_error)
 
     try:
-        _model        = joblib.load(MODEL_PATH)
-        _feature_cols = list(joblib.load(COLS_PATH))
+        ensure_model_files()
+        _model        = joblib.load(str(MODEL_PATH))
+        _feature_cols = list(joblib.load(str(COLS_PATH)))
         print("[LGBM] Crop model loaded successfully.")
     except FileNotFoundError as e:
         _load_error = (
