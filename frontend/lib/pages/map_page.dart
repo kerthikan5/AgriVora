@@ -32,17 +32,26 @@ class _MapPageState extends State<MapPage> {
   final String _soilType = "Reddish Brown Earth";
   bool _mapReady = false;
   bool _locationDenied = false;
+  bool _showLiveLocationBanner = true;
   StreamSubscription<Position>? _positionStream;
+  Timer? _bannerTimer;
 
   @override
   void initState() {
     super.initState();
     _initData();
+    // Hide the "Getting live location" overlay after 7 seconds if GPS takes too long
+    _bannerTimer = Timer(const Duration(seconds: 7), () {
+      if (mounted) {
+        setState(() => _showLiveLocationBanner = false);
+      }
+    });
   }
 
   @override
   void dispose() {
     _positionStream?.cancel();
+    _bannerTimer?.cancel();
     super.dispose();
   }
 
@@ -83,23 +92,7 @@ class _MapPageState extends State<MapPage> {
   }
 
   Future<void> _getUserLocation() async {
-    // 0. Try loaded cached position from previous screens (e.g., HomePage) for instant setup
-    if (LocationService.latestPosition != null && mounted) {
-      final cachedPos = LocationService.latestPosition!;
-      setState(() {
-        _currentLocation = cachedPos;
-        _locationDenied = false;
-      });
-      if (_mapReady) {
-        try {
-          _mapController.move(LatLng(cachedPos.latitude, cachedPos.longitude), 16);
-        } catch (_) {}
-      }
-      _fetchWeatherData(cachedPos);
-      return; // Exit early since we already have position
-    }
-
-    // 1. Try last known position for instant centering
+    // 1. Try last known for instant centering
     final lastPos = await Geolocator.getLastKnownPosition();
     if (lastPos != null && mounted) {
       setState(() => _currentLocation = lastPos);
@@ -387,7 +380,7 @@ class _MapPageState extends State<MapPage> {
                                   ),
 
                                   // ── Conditional Loading/Denied Banner Overlay ───────────────
-                                  if (_currentLocation == null)
+                                  if (_currentLocation == null && _showLiveLocationBanner)
                                     Positioned(
                                       top: 12,
                                       left: 12,
