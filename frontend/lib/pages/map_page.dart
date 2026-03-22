@@ -83,7 +83,23 @@ class _MapPageState extends State<MapPage> {
   }
 
   Future<void> _getUserLocation() async {
-    // 1. Try last known for instant centering
+    // 0. Try loaded cached position from previous screens (e.g., HomePage) for instant setup
+    if (LocationService.latestPosition != null && mounted) {
+      final cachedPos = LocationService.latestPosition!;
+      setState(() {
+        _currentLocation = cachedPos;
+        _locationDenied = false;
+      });
+      if (_mapReady) {
+        try {
+          _mapController.move(LatLng(cachedPos.latitude, cachedPos.longitude), 16);
+        } catch (_) {}
+      }
+      _fetchWeatherData(cachedPos);
+      return; // Exit early since we already have position
+    }
+
+    // 1. Try last known position for instant centering
     final lastPos = await Geolocator.getLastKnownPosition();
     if (lastPos != null && mounted) {
       setState(() => _currentLocation = lastPos);
