@@ -49,6 +49,14 @@ async def chat_with_ai(data: ChatRequest):
 
     # Free GPT Alternative Pipeline
     try:
+        import shutil
+        from pathlib import Path
+
+        # Clear local g4f scraper disk caches to prevent ENOSPC (no space left)
+        g4f_cache_path = Path.home() / ".cache" / "g4f"
+        if g4f_cache_path.exists():
+            shutil.rmtree(str(g4f_cache_path), ignore_errors=True)
+
         from g4f.client import Client as FreeClient
         from g4f.Provider import PollinationsAI
         
@@ -64,4 +72,9 @@ async def chat_with_ai(data: ChatRequest):
         reply_content = response.choices[0].message.content
         return {"success": True, "data": {"reply": reply_content}, "error": None}
     except Exception as e:
-        return {"success": False, "data": None, "error": f"AgriVora Free Agent error: {str(e)}"}
+        # Avoid presenting raw disk errors inside chat UI
+        return {
+            "success": False, 
+            "data": None, 
+            "error": "The AI assistant is temporarily unavailable. Please try again shortly."
+        }
