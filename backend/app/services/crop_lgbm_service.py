@@ -64,39 +64,55 @@ def _to_direct_gdrive_url(url: str) -> str:
     return url
 
 
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
 def download_file(url: str, dest: Path):
     download_url = _to_direct_gdrive_url(url)
-    print(f"[LGBM] Downloading from: {download_url}")
+    logger.info(f"[LGBM] Starting download. Destination: {dest.name}")
+    logger.info(f"[LGBM] Resolved URL: {download_url}")
 
-    session = requests.Session()
-    hdrs = {"User-Agent": "Mozilla/5.0"}
+    try:
+        session = requests.Session()
+        hdrs = {"User-Agent": "Mozilla/5.0"}
 
-    resp = session.get(download_url, headers=hdrs, stream=True, timeout=180)
-    resp.raise_for_status()
+        resp = session.get(download_url, headers=hdrs, stream=True, timeout=180)
+        resp.raise_for_status()
 
-    content_type = resp.headers.get("Content-Type", "")
-    if "text/html" in content_type:
-        try:
-            from bs4 import BeautifulSoup
-            soup = BeautifulSoup(resp.text, "html.parser")
-            form = soup.find("form")
-            if form:
-                action = form.get("action", download_url)
-                params = {inp.get("name"): inp.get("value") for inp in form.find_all("input") if inp.get("name")}
-                resp = session.get(action, params=params, headers=hdrs, stream=True, timeout=180)
-                resp.raise_for_status()
-                content_type = resp.headers.get("Content-Type", "")
-        except ImportError:
-            pass
+        content_type = resp.headers.get("Content-Type", "")
+        logger.info(f"[LGBM] Response details: Content-Type='{content_type}', Size='{resp.headers.get('Content-Length', 'unknown')}'")
 
         if "text/html" in content_type:
-            raise RuntimeError(f"URL returned an HTML page instead of model files for {dest.name}")
+            try:
+                from bs4 import BeautifulSoup
+                soup = BeautifulSoup(resp.text, "html.parser")
+                form = soup.find("form")
+                if form:
+                    action = form.get("action", download_url)
+                    params = {inp.get("name"): inp.get("value") for inp in form.find_all("input") if inp.get("name")}
+                    logger.info("[LGBM] Google Drive consent page detected, submitting form...")
+                    resp = session.get(action, params=params, headers=hdrs, stream=True, timeout=180)
+                    resp.raise_for_status()
+                    content_type = resp.headers.get("Content-Type", "")
+            except ImportError:
+                pass
 
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    with open(dest, "wb") as f:
-        for chunk in resp.iter_content(1024 * 1024):
-            if chunk:
-                f.write(chunk)
+            if "text/html" in content_type:
+                raise RuntimeError(f"URL returned an HTML page instead of model files for {dest.name}")
+
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        with open(dest, "wb") as f:
+            for chunk in resp.iter_content(1024 * 1024):
+                if chunk:
+                    f.write(chunk)
+        logger.info(f"[LGBM] Download complete: {dest.name}")
+
+    except Exception as e:
+        logger.error(f"[LGBM] Download failed for {dest.name}: {e}")
+        raise e
 
 
 def ensure_model_files():
@@ -104,26 +120,29 @@ def ensure_model_files():
 
     # Check model file
     if not MODEL_PATH.exists() or MODEL_PATH.stat().st_size < 1024:
-        # Standard pointer fails on weight sizes
         url = LGBM_MODEL_URL or os.getenv("LGBM_MODEL_URL")
+        logger.info(f"[LGBM] Model URL detected: {url}")
         if not url:
             raise RuntimeError(
                 "LGBM_MODEL_URL environment variable is not set. "
                 "Ensure agrivora_crop_model.pkl exists or provide a download URL in Railway settings."
             )
-        print("[LGBM] Fetching model …")
         download_file(url, MODEL_PATH)
+    else:
+        logger.info(f"[LGBM] Local model found on disk ({MODEL_PATH.stat().st_size} bytes)")
 
     # Check columns file
     if not COLS_PATH.exists() or COLS_PATH.stat().st_size < 10:
         url = LGBM_COLS_URL or os.getenv("LGBM_COLS_URL")
+        logger.info(f"[LGBM] Columns URL detected: {url}")
         if not url:
             raise RuntimeError(
                 "LGBM_COLS_URL environment variable is not set. "
                 "Ensure agrivora_feature_columns.pkl exists or provide a download URL in Railway settings."
             )
-        print("[LGBM] Fetching feature columns …")
         download_file(url, COLS_PATH)
+    else:
+        logger.info(f"[LGBM] Local feature columns found on disk ({COLS_PATH.stat().st_size} bytes)")
 
 
 def _load_once():
@@ -135,18 +154,25 @@ def _load_once():
 
     try:
         ensure_model_files()
+        
+        logger.info("[LGBM] Loading model from disk...")
         _model        = joblib.load(str(MODEL_PATH))
         _feature_cols = list(joblib.load(str(COLS_PATH)))
-        print("[LGBM] Crop model loaded successfully.")
+        logger.info("[LGBM] Crop model loaded successfully.")
+
     except FileNotFoundError as e:
         _load_error = (
             f"Crop recommendation model file not found: {e}. "
             "Ensure agrivora_crop_model.pkl and agrivora_feature_columns.pkl exist "
             "in backend/app/models/crop_lgbm/."
         )
+        logger.error(f"[LGBM] Load error: {_load_error}")
         raise RuntimeError(_load_error)
+
     except Exception as e:
         _load_error = f"Failed to load crop model: {e}"
+        logger.error(f"[LGBM] Exception during load: {_load_error}")
+        raise RuntimeError(_load_error)
         raise RuntimeError(_load_error)
 
 
